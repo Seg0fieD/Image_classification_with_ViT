@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, f1_score, precision_score, recall_score
 import pandas as pd
 from torch.utils.data import Sampler
 import logging
@@ -16,18 +16,15 @@ def setup_logger():
     logger = logging.getLogger('image_classification')
     logger.setLevel(logging.INFO)
     
-    # Create handlers
     c_handler = logging.StreamHandler()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = os.path.join(config.LOG_DIR, f'training_{timestamp}.log')
     f_handler = logging.FileHandler(log_file)
     
-    # Create formatters and add to handlers
     log_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     c_handler.setFormatter(log_format)
     f_handler.setFormatter(log_format)
     
-    # Add handlers to the logger
     logger.addHandler(c_handler)
     logger.addHandler(f_handler)
     
@@ -43,7 +40,7 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
     if hasattr(torch, 'mps'):
         torch.mps.manual_seed(seed)
-    # Make CuDNN deterministic
+
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
@@ -143,15 +140,12 @@ def plot_confusion_matrix(y_true, y_pred, class_names, save_path):
 
 def visualize_predictions(images, true_labels, pred_labels, class_names, save_path, num_samples=5):
     """Visualize sample predictions"""
-    # Select a subset of samples
+
     indices = np.random.choice(len(images), min(num_samples, len(images)), replace=False)
-    
     fig, axes = plt.subplots(1, len(indices), figsize=(15, 3))
     
     for i, idx in enumerate(indices):
-        # Convert tensor to image
         img = images[idx].permute(1, 2, 0).cpu().numpy()
-        # Denormalize
         mean = np.array([0.485, 0.456, 0.406])
         std = np.array([0.229, 0.224, 0.225])
         img = img * std + mean
@@ -203,3 +197,82 @@ def get_class_distribution(predictions, save_path):
     plt.close()
     
     return class_counts
+
+def visualize_prediction(image_path, predicted_class, confidence, save_path=None, verbose=True):
+    """Visualize an image with its prediction."""
+    # Read the image
+    import cv2
+    img = cv2.imread(image_path)
+    if img is None:
+        print(f"Could not read image: {image_path}")
+        return
+    
+    # Convert from BGR to RGB for matplotlib
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
+    # Display the image with prediction
+    plt.figure(figsize=(10, 8))
+    plt.imshow(img)
+    plt.title(f"Prediction: {predicted_class} (Confidence: {confidence:.2f})")
+    plt.axis('off')
+    
+    if save_path:
+        if os.path.isdir(save_path):
+            from datetime import datetime
+            filename = f"prediction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            save_path = os.path.join(save_path, filename)
+        
+        directory = os.path.dirname(save_path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        plt.savefig(save_path)
+        if verbose:
+            print(f"Visualization saved to {save_path}")
+    else:
+        plt.show()
+    
+    plt.close()
+
+def plot_prediction_distribution(predictions, save_path):
+    """
+    Create a bar plot showing distribution of predicted classes
+    Args:
+        predictions: DataFrame containing prediction results
+        save_path: Path to save the plot
+    """
+    if predictions is None or len(predictions) == 0:
+        print("No prediction data available for plotting")
+        return
+        
+    # Count class frequencies
+    class_counts = predictions['predicted_class'].value_counts()
+    
+    plt.figure(figsize=(10, 6))
+    class_counts.plot(kind='bar', color='skyblue')
+    plt.title('Distribution of Predicted Classes')
+    plt.xlabel('Class')
+    plt.ylabel('Count')
+    plt.tight_layout()
+    
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    
+    plt.savefig(save_path)
+    plt.close()
+    print(f"Class distribution plot saved to {save_path}")
+
+def calculate_metrics(y_true, y_pred):
+    """Calculate classification metrics"""
+    accuracy = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred, average='weighted')
+    precision = precision_score(y_true, y_pred, average='weighted')
+    recall = recall_score(y_true, y_pred, average='weighted')
+    return accuracy, f1, precision, recall
+
+def log_metrics_to_tensorboard(writer, metrics, epoch, prefix=''):
+    """Log metrics to TensorBoard"""
+    train_loss, val_loss, accuracy, f1 = metrics
+    writer.add_scalar(f'{prefix}train_loss', train_loss, epoch)
+    writer.add_scalar(f'{prefix}val_loss', val_loss, epoch)
+    writer.add_scalar(f'{prefix}accuracy', accuracy, epoch)
+    writer.add_scalar(f'{prefix}f1', f1, epoch)
