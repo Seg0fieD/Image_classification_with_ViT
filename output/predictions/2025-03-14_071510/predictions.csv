@@ -1,0 +1,7 @@
+filename,path,predicted_class,confidence
+6.jpeg,data/demo_/6.jpeg,mountain,0.9996930360794067
+4.jpeg,data/demo_/4.jpeg,buildings,0.9999948740005493
+5.jpeg,data/demo_/5.jpeg,buildings,0.9995425939559937
+1.jpeg,data/demo_/1.jpeg,street,0.8966363668441772
+2.jpeg,data/demo_/2.jpeg,buildings,1.0
+3.jpeg,data/demo_/3.jpeg,glacier,0.999809205532074

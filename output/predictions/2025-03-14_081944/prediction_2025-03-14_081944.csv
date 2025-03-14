@@ -1,0 +1,27 @@
+filename,path,predicted_class,confidence
+download (9).jpeg,data/demo2/download (9).jpeg,sea,0.7147940993309021
+download (1).jpeg,data/demo2/download (1).jpeg,mountain,0.9918236136436462
+download.png,data/demo2/download.png,buildings,0.9528626203536987
+download (6).jpeg,data/demo2/download (6).jpeg,buildings,0.9587368369102478
+download (3).jpeg,data/demo2/download (3).jpeg,glacier,0.9998492002487183
+download (11).jpeg,data/demo2/download (11).jpeg,forest,1.0
+download (5).jpeg,data/demo2/download (5).jpeg,sea,0.9999809265136719
+images.jpeg,data/demo2/images.jpeg,glacier,0.9903150200843811
+download (2).jpeg,data/demo2/download (2).jpeg,glacier,0.9994603991508484
+download (7).jpeg,data/demo2/download (7).jpeg,buildings,1.0
+images (4).jpeg,data/demo2/images (4).jpeg,street,0.9977037310600281
+images (9).jpeg,data/demo2/images (9).jpeg,forest,1.0
+images (2).jpeg,data/demo2/images (2).jpeg,street,0.9999103546142578
+images (8).jpeg,data/demo2/images (8).jpeg,buildings,0.969017505645752
+download.jpeg,data/demo2/download.jpeg,mountain,0.7481293678283691
+images (6).jpeg,data/demo2/images (6).jpeg,sea,1.0
+images (5).jpeg,data/demo2/images (5).jpeg,sea,0.9999639987945557
+images (7).jpeg,data/demo2/images (7).jpeg,sea,0.9168505668640137
+images (10).jpeg,data/demo2/images (10).jpeg,forest,1.0
+images (11).jpeg,data/demo2/images (11).jpeg,forest,1.0
+images (12).jpeg,data/demo2/images (12).jpeg,forest,1.0
+download (8).jpeg,data/demo2/download (8).jpeg,buildings,0.9422981142997742
+images (1).jpeg,data/demo2/images (1).jpeg,street,0.9179871678352356
+download (10).jpeg,data/demo2/download (10).jpeg,forest,1.0
+images (3).jpeg,data/demo2/images (3).jpeg,street,0.9999865293502808
+download (4).jpeg,data/demo2/download (4).jpeg,glacier,0.9806346893310547
