@@ -21,8 +21,7 @@ def load_model(model_path=None):
     Returns:
         Loaded model
     """
-
-    # Set device
+    # Setup device - updated to handle CUDA, MPS, and CPU
     if torch.cuda.is_available():
         device = torch.device("cuda")
         print(f"Using CUDA device: {torch.cuda.get_device_name(0)}")
@@ -165,15 +164,38 @@ def predict_directory(model, directory, device, output_csv=None):
     
     return results_df
 
-def visualize_prediction(image_path, predicted_class, confidence, save_path=None):
+def plot_prediction_distribution(predictions, save_path):
     """
-    Visualize an image with its prediction.
+    Create a bar plot showing distribution of predicted classes
     Args:
-        image_path: Path to the image
-        predicted_class: Predicted class name
-        confidence: Prediction confidence
-        save_path: Path to save the visualization
+        predictions: DataFrame containing prediction results
+        save_path: Path to save the plot
     """
+    if predictions is None or len(predictions) == 0:
+        print("No prediction data available for plotting")
+        return
+        
+    # Count class frequencies
+    class_counts = predictions['predicted_class'].value_counts()
+    
+    # Create plot
+    plt.figure(figsize=(10, 6))
+    class_counts.plot(kind='bar', color='skyblue')
+    plt.title('Distribution of Predicted Classes')
+    plt.xlabel('Class')
+    plt.ylabel('Count')
+    plt.tight_layout()
+    
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    
+    # Save the plot
+    plt.savefig(save_path)
+    plt.close()
+    print(f"Class distribution plot saved to {save_path}")
+
+def visualize_prediction(image_path, predicted_class, confidence, save_path=None, verbose=True):
+    """Visualize an image with its prediction."""
     # Read the image
     img = cv2.imread(image_path)
     if img is None:
@@ -190,9 +212,21 @@ def visualize_prediction(image_path, predicted_class, confidence, save_path=None
     plt.axis('off')
     
     if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        # Check if save_path is a directory
+        if os.path.isdir(save_path):
+            # If it's a directory, add a default filename
+            filename = f"prediction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            save_path = os.path.join(save_path, filename)
+        
+        # Ensure parent directory exists
+        directory = os.path.dirname(save_path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        # Save the figure
         plt.savefig(save_path)
-        print(f"Visualization saved to {save_path}")
+        if verbose:
+            print(f"Visualization saved to {save_path}")
     else:
         plt.show()
     
@@ -242,22 +276,23 @@ def main():
             
             print(f"Prediction: {pred_class}")
             print(f"Confidence: {pred_prob:.4f}")
-            
+          
             # Visualize if requested
             if args.visualize:
-                # Create the predictions directory if it doesn't exist
-                os.makedirs(config.PRED_DIR_OUT, exist_ok=True)
-                
-                # Generate the filename with timestamp
-                viz_path = os.path.join(config.PRED_DIR_OUT, f"prediction_{timestamp}.png")
-                
-                # Use custom output path if provided
+                # Handle output path
                 if args.output:
+                    # Make sure directory exists if provided
+                    if os.path.isdir(args.output) or args.output.endswith('/'):
+                        os.makedirs(args.output, exist_ok=True)
                     viz_path = args.output
+                else:
+                    # Use default output directory
+                    os.makedirs(config.PRED_DIR_OUT, exist_ok=True)
+                    filename = f"prediction_{timestamp}.png"
+                    viz_path = os.path.join(config.PRED_DIR_OUT, filename)
                 
-                # Call visualization function with an explicit path
+                # Call visualization function
                 visualize_prediction(args.image, pred_class, pred_prob, viz_path)
-                print(f"Visualization saved to {viz_path}")
     
     # Predict directory of images
     if args.dir:
@@ -269,28 +304,38 @@ def main():
         prediction_subdir = os.path.join(config.PRED_DIR_OUT, timestamp)
         os.makedirs(prediction_subdir, exist_ok=True)
         print(f"Created prediction directory: {prediction_subdir}")
-        
+
         # Set CSV output path
         output_csv = args.output
         if output_csv is None:
-            output_csv = os.path.join(prediction_subdir, 'predictions.csv')
-        
+            output_csv = os.path.join(prediction_subdir, f'prediction_{timestamp}.csv')
+        else:
+            # Check if output is a directory
+            if os.path.isdir(output_csv) or output_csv.endswith('/'):
+                os.makedirs(output_csv, exist_ok=True)
+                output_csv = os.path.join(output_csv, f'prediction_{timestamp}.csv')
         print(f"Predicting images in directory: {args.dir}")
         results_df = predict_directory(model, args.dir, device, output_csv)
-        
-        # Display results summary
+
+        # Display results summary and create plot
         if results_df is not None and not results_df.empty:
             print("\nPrediction Summary:")
             counts = results_df['predicted_class'].value_counts()
             for cls, count in counts.items():
                 print(f"  {cls}: {count} images")
             
+            # Generate and save class distribution plot
+            plot_filename = f"prediction_image_distribution_{timestamp}.png"
+            plot_path = os.path.join(config.PLOT_DIR, plot_filename)
+            plot_prediction_distribution(results_df, plot_path)
+
             # Visualize predictions if requested
             if args.visualize:
-                # Process all images, not just 5
+                # Process all images
                 for idx, row in results_df.iterrows():
                     viz_path = os.path.join(prediction_subdir, f"{os.path.splitext(row['filename'])[0]}_prediction.png")
-                    visualize_prediction(row['path'], row['predicted_class'], row['confidence'], viz_path)
+                    visualize_prediction(row['path'], row['predicted_class'], row['confidence'], viz_path, verbose=False)
                 print(f"Visualizations saved to {prediction_subdir}")
+
 if __name__ == "__main__":
     main()

@@ -19,11 +19,11 @@ for dir_path in [OUTPUT_DIR, PLOT_DIR, LOG_DIR, CSV_DIR, PRED_DIR_OUT, MODEL_DIR
     os.makedirs(dir_path, exist_ok=True)
 
 # Training parameters
-BATCH_SIZE = 16
-NUM_WORKERS = 4
+BATCH_SIZE = 4
+NUM_WORKERS = 0
 SEED = 37
 LEARNING_RATE = 0.001
-NUM_EPOCHS = 10
+NUM_EPOCHS = 100
 PATIENCE = 3  # Early stopping patience
 
 # Model parameters
