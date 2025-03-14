@@ -3,7 +3,7 @@ import logging
 import sys
 import os
 
-# Add project root to path
+# root directory
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
@@ -21,20 +21,19 @@ def main():
     
     args = parser.parse_args()
     
-    # Update config with command line arguments
     config.SEED = args.seed
     config.NUM_EPOCHS = args.epochs
     config.BATCH_SIZE = args.batch_size
     config.LEARNING_RATE = args.lr
     config.NUM_WORKERS = args.workers
     
-    # Set up seed
+    # Validate configuration 
+    config.validate_config()
+    
     utils.set_seed(config.SEED)
     
-    # Create output directories
-    for dir_path in [config.OUTPUT_DIR, config.PLOT_DIR, config.LOG_DIR, 
-                     config.CSV_DIR, config.PRED_DIR_OUT, config.MODEL_DIR]:
-        os.makedirs(dir_path, exist_ok=True)
+    # Output directories 
+    config.create_directories()
     
     # Start training
     train_model(train_two_stage=not args.single_stage)
