@@ -1,6 +1,4 @@
-# Image_classification_with_ViT
-
-## Intel Image Classification using Vision Transformer
+# Intel Image Classification using Vision Transformer
 
 This project implements a Vision Transformer (ViT) based approach for classifying natural scenes from the Intel Image Classification dataset.
 
@@ -14,89 +12,64 @@ The Intel Image Classification dataset contains around 25,000 images (150x150) d
 - Sea
 - Street
 
-The dataset is divided into:
-- Training set: ~14,000 images
-- Testing set: ~3,000 images
-- Prediction set: ~7,000 images
+Dataset splits: training (~14,000 images), testing (~3,000 images), prediction (~7,000 images)
 
-## Project Structure
+## Project directory structure
 
 ```
 Image_classification_task/
-├── data/                  # Dataset directory
-│   ├── seg_train/         # Training images organized by class folders
-│   ├── seg_test/          # Test images organized by class folders
-│   ├── seg_pred/          # Prediction images 
-│   └── demo_/             # Custom images for demonstration
-├── model_ViT.py           # Vision Transformer model definition
-├── train.py               # Training pipeline
-├── dataset.py             # Data loading and preprocessing
-├── predict.py             # Inference script for new images
-├── utils.py               # Utility functions
-├── config.py              # Configuration parameters
-├── main.py                # Entry point script
-└── output/                # Generated outputs
-    ├── plots/             # Training plots and visualizations
-    ├── predictions/       # Model predictions visualizations
-    ├── logs/              # Training logs
-    ├── csv/               # Prediction results in CSV format
-    └── best_model/        # Saved model checkpoints
+├── data/                                   # Dataset directory
+│   ├── seg_train/                          # Training images by class folders
+│   ├── seg_test/                           # Test images by class folders
+│   ├── seg_pred/                           # Prediction images 
+│   ├── demo1/                              # Custom images for demonstration
+│   ├── demo2/                              # Additional demo images
+│   ├── single_img1                         # Images for single prediction demonstration
+│   └── single_img2                         
+├── model_ViT.py                            # Vision Transformer model definition
+├── train.py                                # Training pipeline
+├── dataset.py                              # Data loading and preprocessing
+├── predict.py                              # Inference script for new images
+├── utils.py                                # Utility functions
+├── config.py                               # Configuration parameters
+├── main.py                                 
+└── output/                                 # Outputs directory
+    ├── plots/                              # Plots and visualizations
+    ├── predictions/                        # Model predictions visualizations
+    │   ├── 2025-03-14_071510/              # Predictions from demo1 data
+    │   ├── 2025-03-14_074838_(seg_pred)/   # First 100 images from prediction dataset
+    │   ├── 2025-03-14_081944/              # Predictions from demo2 data 
+    │   ├── prediction_20250314_173131.png  # Single images inference for demonstration
+    │   └── prediction_20250314_173211.png  
+    ├── logs/                               # Training logs
+    ├── csv/                                
+    └── best_model/                         # Saved model checkpoints
 ```
 
 ## Model Architecture
 
-The model is based on the pre-trained Vision Transformer (ViT-B/16) with a custom classification head added for the specific task:
+The model uses pre-trained Vision Transformer (ViT-B/16) with a custom classification head:
 
 ```python
 model = timm.create_model("vit_base_patch16_224", pretrained=True)
-num_features = model.head.in_features
 model.head = nn.Sequential(
-    nn.Linear(num_features, 512),
+    nn.Linear(model.head.in_features, 512),
     nn.GELU(),
     nn.Dropout(0.3),
     nn.Linear(512, 6)  # 6 classes
 )
 ```
 
-This architecture:
-1. Uses a pre-trained ViT-B/16 as the backbone
-2. Replaces the classification head with a custom network
-3. Adds a hidden layer with GELU activation and dropout for regularization
-4. Outputs predictions for the 6 classes
-
 ## Training Process
 
-The training follows a two-stage approach:
+The training can be done in either two-stage (head-only, then fine-tuning) or single-stage approach. Training uses Cross-Entropy Loss with AdamW optimizer, Warm-up + Cosine Annealing scheduling, and early stopping based on F1 score.
 
-### Stage 1: Head-only Training
-- Freeze the backbone (all ViT layers)
-- Train only the custom classification head
-- This allows the model to quickly adapt to the new classification task
+## Evaluation Metrics
 
-### Stage 2: Fine-tuning
-- Unfreeze the last transformer blocks
-- Fine-tune these layers with a lower learning rate
-- This allows the model to adapt its feature representations to the specific dataset
-
-### Training Parameters
-- **Loss Function**: Cross-Entropy Loss
-- **Optimizer**: AdamW
-- **Learning Rate Scheduler**: Warm-up followed by Cosine Annealing
-- **Metrics**: 
-  - Accuracy
-  - F1 Score (weighted, used for model selection)
-  - Precision
-  - Recall
-- **Early Stopping**: Based on F1 score with patience of 3 epochs
-- **Mixed Precision Training**: Used for faster training on compatible GPUs
-
-## Results
-
-The model achieves strong performance on the validation set:
-- F1 Score: >0.90
-- Accuracy: >0.90
-
-Performance varies by class, with some natural scenes being easier to distinguish than others. The model is particularly effective at distinguishing forests and glaciers, while occasionally confusing buildings and streets.
+- Accuracy
+- F1 Score (weighted, used for model selection)
+- Precision
+- Recall
 
 ## Usage
 
@@ -115,41 +88,22 @@ python main.py --single_stage
 
 ### Prediction
 
-For a single image:
 ```bash
-python predict.py --image data/img1.jpeg --visualize
-```
+# Single image
+python predict.py --image data/single_img1 --visualize
 
-For a directory of images:
-```bash
-python predict.py --dir data/demo_ --visualize
-```
+# Directory of images
+python predict.py --dir data/demo2 --visualize
 
-For using a specific model:
-```bash
-python predict.py --model output/best_model/best_model_0.9177.pth --image data/img1.jpeg
+# Using specific model
+python predict.py --model output/best_model/best_model_0.9177.pth --image data/single_img1 --output output/predictions
 ```
 
 ## Dependencies
 
-- PyTorch
-- torchvision
-- timm
-- tensorboard
-- scikit-learn
-- pandas
-- matplotlib
-- seaborn
-- opencv-python
-- tqdm
-
-## Installation
-
-```bash
-pip install torch torchvision tqdm matplotlib seaborn scikit-learn pandas timm tensorboard opencv-python
-```
+PyTorch, torchvision, timm, tensorboard, scikit-learn, pandas, matplotlib, seaborn, opencv-python, tqdm
 
 ## Acknowledgements
 
-- The dataset was originally published by Intel for the "Intel Image Classification Challenge" on Analytics Vidhya
-- The Vision Transformer implementation is based on the timm library by Ross Wightman
+- Dataset originally published by Intel for the "Intel Image Classification Challenge" on Analytics Vidhya
+- Vision Transformer implementation based on the timm library by Ross Wightman
