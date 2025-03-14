@@ -1,14 +1,16 @@
 import torch
 import torch.nn as nn
 import timm
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
+
 import config
 
 def create_vit_model(num_classes=config.NUM_CLASSES, pretrained=True):
     """Create a Vision Transformer model with a custom classification head"""
-    # Load pretrained ViT-B_16 model
+    # Load pretrained ViT model
     model = timm.create_model("vit_base_patch16_224", pretrained=pretrained)
     
-    # Modify the classification head
+    # Modification for classification task
     num_features = model.head.in_features
     model.head = nn.Sequential(
         nn.Linear(num_features, 512),
@@ -43,10 +45,10 @@ def unfreeze_last_blocks(model, num_blocks=3):
 def get_optimizer(model, lr=config.LEARNING_RATE, stage='head_only'):
     """Get optimizer based on training stage"""
     if stage == 'head_only':
-        # Only optimize the head
+        # optimization for head only
         optimizer = torch.optim.AdamW(model.head.parameters(), lr=lr)
     elif stage == 'fine_tuning':
-        # Different learning rates for different parts
+        # separate learning rates for head and last 3 blocks
         trainable_params = [
             {'params': model.head.parameters(), 'lr': lr},
             {'params': [p for i, block in enumerate(model.blocks) 
@@ -62,7 +64,6 @@ def get_optimizer(model, lr=config.LEARNING_RATE, stage='head_only'):
 
 def get_scheduler(optimizer, train_loader, num_epochs):
     """Create a learning rate scheduler"""
-    from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
     
     # Warm-up phase
     warmup_scheduler = LinearLR(
